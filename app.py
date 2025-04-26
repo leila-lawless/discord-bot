@@ -64,12 +64,11 @@ async def on_message(message):
 
     # Responses with CORRECT KEYS
     responses = {
-        "positive": "🌟 That's wonderful! What else made you feel this way?",
-        "negative": "💔 I'm sorry to hear that. Would you like to share more?",
-        "neutral": "🤔 Interesting perspective! Could you elaborate?"
+        "positive": "That's wonderful! ☺️🌟",
+        "negative": "I'm sorry to hear that 😢💔",
     }
     
-    reply = responses.get(sentiment, "🎈 Thanks for sharing! What's next?")
+    reply = responses.get(sentiment, "What happened? 🤔")
 
     async with message.channel.typing():
         await message.channel.send(reply)
