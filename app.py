@@ -1,23 +1,9 @@
 import os
+import time
 import aiohttp
-from flask import Flask
-from threading import Thread
 from dotenv import load_dotenv
 import discord
 
-# Web server setup
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "🤖 Sentiment Bot is Alive!"
-
-def run_flask():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-Thread(target=run_flask).start()
-
-# Your bot code
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
@@ -33,9 +19,19 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    # ... keep your existing on_message code exactly as-is ...
-    if message.channel.id != CHANNEL_ID or message.author == client.user:
+    # Prevent self-responses
+    if message.author == client.user:
         return
+    
+    # Only allow specific channel
+    if message.channel.id != CHANNEL_ID:
+        return
+    
+    # Cooldown check
+    cooldown = 5  # Seconds between responses
+    if hasattr(client, "last_response") and (time.time() - client.last_response) < cooldown:
+        return
+    client.last_response = time.time()
 
     user_text = message.content.strip()[:500]
     if not user_text:
@@ -49,12 +45,7 @@ async def on_message(message):
                 headers={"Content-Type": "application/json"},
                 timeout=15
             ) as res:
-                
-                print(f"API Status: {res.status}")  # Debug
                 data = await res.json(content_type=None)
-                print(f"Raw API Response: {data}")  # Debug
-                
-                # Handle numerical response (1/0)
                 raw_sentiment = data.get("sentiment", 1)
                 sentiment = "positive" if int(raw_sentiment) == 1 else "negative"
 
@@ -62,13 +53,12 @@ async def on_message(message):
         print(f"API Error: {str(e)}")
         sentiment = "neutral"
 
-    # Responses with CORRECT KEYS
     responses = {
         "positive": "That's wonderful! ☺️🌟",
         "negative": "I'm sorry to hear that 😢💔",
     }
     
-    reply = responses.get(sentiment, "What happened? 🤔")
+    reply = responses.get(sentiment, ""What happened? 🤔")
 
     async with message.channel.typing():
         await message.channel.send(reply)
