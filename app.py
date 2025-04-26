@@ -58,7 +58,7 @@ async def on_message(message):
         "negative": "I'm sorry to hear that 😢💔",
     }
     
-    reply = responses.get(sentiment, ""What happened? 🤔")
+    reply = responses.get(sentiment, "What happened? 🤔")
 
     async with message.channel.typing():
         await message.channel.send(reply)
