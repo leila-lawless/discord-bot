@@ -74,6 +74,7 @@ async def on_message(message):
     if user_states.get(user_id) == "awaiting_day_response":
         emotion = await get_emotion(user_text)
         reply = random.choice(emotion_responses.get(emotion, emotion_responses["neutral"]))
+        async with message.channel.typing():
         await message.channel.send(reply)
         user_states[user_id] = None  # Reset state
         return
@@ -81,7 +82,9 @@ async def on_message(message):
     # General emotion detection
     emotion = await get_emotion(user_text)
     reply = random.choice(emotion_responses.get(emotion, emotion_responses["neutral"]))
+    async with message.channel.typing():
     await message.channel.send(reply)
+
 
 # Helper function to call model
 async def get_emotion(text):
