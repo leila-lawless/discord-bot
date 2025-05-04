@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import discord
 import random
 
-# Web server
+# Web server for uptime pings
 app = Flask(__name__)
 
 @app.route('/')
@@ -18,12 +18,13 @@ def run_flask():
 
 Thread(target=run_flask).start()
 
-# Discord bot setup
+# Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 MODEL_URL = os.getenv("MODEL_URL")
 
+# Discord bot setup
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
@@ -39,7 +40,7 @@ emotion_responses = {
     "neutral": ["I see. 😊", "Hmm, tell me more.", "Interesting!"]
 }
 
-# Optional: Track user interactions
+# Track user conversation state
 user_states = {}
 
 @client.event
@@ -59,34 +60,31 @@ async def on_message(message):
     if not user_text:
         return
 
-    # Respond to greetings
     greetings = ["hi", "hello", "hey", "yo", "sup"]
     if user_text.lower() in greetings:
-        await message.channel.send(random.choice([
-            f"Hey {message.author.name}! How was your day? 😊",
-            f"Hello {message.author.name}, feeling good today?",
-            f"Hiya! Wanna talk about something?"
-        ]))
+        async with message.channel.typing():
+            await message.channel.send(random.choice([
+                f"Hey {message.author.name}! How was your day? 😊",
+                f"Hello {message.author.name}, feeling good today?",
+                f"Hiya! Wanna talk about something?"
+            ]))
         user_states[user_id] = "awaiting_day_response"
         return
 
-    # Respond to follow-up after asking how was your day
     if user_states.get(user_id) == "awaiting_day_response":
         emotion = await get_emotion(user_text)
         reply = random.choice(emotion_responses.get(emotion, emotion_responses["neutral"]))
         async with message.channel.typing():
-        await message.channel.send(reply)
-        user_states[user_id] = None  # Reset state
+            await message.channel.send(reply)
+        user_states[user_id] = None
         return
 
-    # General emotion detection
     emotion = await get_emotion(user_text)
     reply = random.choice(emotion_responses.get(emotion, emotion_responses["neutral"]))
     async with message.channel.typing():
-    await message.channel.send(reply)
+        await message.channel.send(reply)
 
-
-# Helper function to call model
+# Helper: Get emotion from hosted model
 async def get_emotion(text):
     try:
         async with aiohttp.ClientSession() as session:
@@ -99,8 +97,7 @@ async def get_emotion(text):
                 print(f"API Status: {res.status}")
                 data = await res.json(content_type=None)
                 print(f"API Response: {data}")
-                emotion = data.get("emotion", "neutral").lower()
-                return emotion
+                return data.get("emotion", "neutral").lower()
     except Exception as e:
         print(f"API Error: {str(e)}")
         return "neutral"
